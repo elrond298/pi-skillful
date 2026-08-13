@@ -7,6 +7,7 @@ export interface SkillCommandInfo {
   name: string;
   path: string;
   baseDir: string;
+  description?: string;
 }
 
 export interface LoadedSkillInfo {
@@ -31,6 +32,17 @@ export function listLoadedSkills(commands: Iterable<CommandLike>): LoadedSkillIn
     byName.set(name, { name, description: command.description ?? "", sourceInfo: command.sourceInfo });
   }
   return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function listSkillsByName(commands: Iterable<CommandLike>): Map<string, SkillCommandInfo> {
+  const result = new Map<string, SkillCommandInfo>();
+  for (const command of commands) {
+    if (command.source !== "skill") continue;
+    const skill = sourceInfoToSkill(command);
+    if (!skill) continue;
+    result.set(skill.name, { ...skill, description: command.description });
+  }
+  return result;
 }
 
 export function isTopLevelSkill(skill: { sourceInfo: { origin: SourceInfo["origin"] } }): boolean {

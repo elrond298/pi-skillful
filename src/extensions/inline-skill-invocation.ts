@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { readSkillBlock, sourceInfoToSkill, type SkillCommandInfo } from "../skills.js";
+import { listSkillsByName, readSkillBlock } from "../skills.js";
 
 const SKILL_INVOCATION_PATTERN = /(^|[^\w/-])\/skill:([a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)(?=$|[^a-z0-9-])/g;
 
@@ -9,7 +9,7 @@ export default function inlineSkillInvocation(pi: ExtensionAPI) {
       return { action: "continue" };
     }
 
-    const skillsByName = getSkillsByName(pi);
+    const skillsByName = listSkillsByName(pi.getCommands());
     const invocations = findInvocations(event.text);
     if (invocations.length === 0) return { action: "continue" };
 
@@ -48,15 +48,6 @@ export default function inlineSkillInvocation(pi: ExtensionAPI) {
 
 }
 
-function getSkillsByName(pi: ExtensionAPI): Map<string, SkillCommandInfo> {
-  const result = new Map<string, SkillCommandInfo>();
-  for (const command of pi.getCommands()) {
-    if (command.source !== "skill") continue;
-    const skill = sourceInfoToSkill(command);
-    if (skill) result.set(skill.name, skill);
-  }
-  return result;
-}
 
 function findInvocations(text: string): Array<{ name: string }> {
   const result: Array<{ name: string }> = [];

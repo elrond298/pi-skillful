@@ -6,6 +6,10 @@ This project follows the spirit of [Keep a Changelog](https://keepachangelog.com
 
 ## [Unreleased]
 
+### Added
+
+- `$` skill autocomplete popup anywhere in the prompt; accepting a suggestion inserts `/skill:name` for inline expansion.
+
 ### Changed
 
 - Share install telemetry mechanics through `@mocito/install-telemetry` while preserving Pi-specific settings and state paths.

@@ -36,6 +36,9 @@ Use /skill:code-security and /skill:semgrep to review this change.
 
 The extension replaces each known marker with that skill's `SKILL.md` content before Pi's built-in skill/template expansion runs.
 
+### `$` skill autocomplete
+
+The built-in slash-command popup only appears when `/` starts the prompt. Typing `$` at a word boundary anywhere in the prompt opens a skill autocomplete popup instead: `$` alone lists all skills, and typing filters them (`$skill:name` is accepted too). Choosing a suggestion inserts `/skill:name`, which inline skill invocation then expands on submit. Tokens that match no skill (like `$HOME`) never open the popup.
 ### Skill prompt visibility
 
 Hide skills from the `<available_skills>` section of the system prompt without editing each skill's `disable-model-invocation` frontmatter.

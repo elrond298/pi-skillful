@@ -59,8 +59,11 @@ from the fork with `git filter-repo --subdirectory-filter packages/pi-skillful
 --prune-empty always`, which is why the hashes differ from upstream's (the
 rewrite is deterministic, so filtered upstream commits are still ancestors
 of this history).
-This repo is a clone of that mirror, so keeping it in sync is a plain push —
-no re-filtering needed:
+This repo is a clone of that mirror, so keeping it in sync is a plain push:
+
+```bash
+git push origin main
+```
 
 ## Local modifications
 

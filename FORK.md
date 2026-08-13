@@ -1,9 +1,13 @@
 # FORK
 
 This is a fork of `pi-skillful` from the upstream monorepo
-<https://github.com/jvm/pi-mono>, maintained as a jj (jujutsu) clone of the
-monorepo with local changes stacked on a bookmark, and mirrored to GitHub as a
-filtered single-package repository.
+<https://github.com/jvm/pi-mono>. This repo is a plain git clone of the
+filtered single-package mirror hosted on GitHub (`origin`): the package
+contents sit at the repo root, and the history was rewritten by
+`git filter-repo --subdirectory-filter packages/pi-skillful --prune-empty
+always`, so every commit hash differs from upstream and the two histories are
+unrelated. Upstream is tracked via the `upstream` remote
+(<https://github.com/jvm/pi-mono.git>, branch `main`).
 
 ## Base
 
@@ -11,7 +15,7 @@ filtered single-package repository.
   at `packages/pi-skillful` there)
 - Upstream branch: `main`
 - Upstream snapshot this fork is based on: `150ff8c4f9b3d7a185af21b7f362aa843a0a3a60`
-  (`Release pi-codex-tools 0.2.3`, tag `pi-codex-tools@0.2.3`), tracked locally as `main@origin`
+  (`Release pi-codex-tools 0.2.3`, tag `pi-codex-tools@0.2.3`), tracked as `refs/remotes/upstream/main`
 - Cloned: 2026-08-13
 
 Upstream main is already ahead of the last published release used locally
@@ -20,44 +24,38 @@ before the fork (`pi-skillful@0.4.0`): install telemetry was extracted into
 
 ## Version control layout
 
-- Local repo is a jj clone of the whole monorepo, colocated with git;
-  upstream state is immutable via `main@origin`.
-- Sparse working copy: only `packages/pi-skillful/` (this directory) plus the
-  monorepo-root `package.json`, `package-lock.json`, and `AGENTS.md` are
-  materialized (`jj sparse list`). The local repo still tracks the full
-  monorepo history; only the working tree is trimmed.
-- All local changes are stacked on bookmark `skillful`; upstream history is
-  never rewritten.
-- Sync upstream locally:
+- Single branch `main`, pushed to `origin` (GitHub mirror).
+- Upstream state lives at `refs/remotes/upstream/main` (full monorepo, fetched
+  read-only; never merged directly — wrong paths and unrelated history).
+- Syncs land through local branch `upstream-pkg`: the filtered form of
+  upstream's `packages/pi-skillful`, merged into `main`.
 
-  ```bash
-  jj git fetch && jj rebase -s 'trunk()..@' -d trunk()
-  ```
+## Syncing upstream
+
+Run the helper after upstream changes you want to pick up:
+
+```bash
+scripts/sync-upstream.sh
+```
+
+It fetches upstream, re-filters `packages/pi-skillful` into `upstream-pkg`
+(same filter-repo recipe as the mirror; deterministic, so the branch keeps
+growing from the previous sync), and merges it into the current branch.
+`--allow-unrelated-histories` is used automatically on the first sync only.
+
+- Requires a clean working tree and `git-filter-repo`
+  (`uv tool install git-filter-repo`).
+- Files changed only upstream merge cleanly; files changed on both sides stop
+  the merge for manual resolution, then commit.
+- After the sync: `git push origin main`.
 
 ## GitHub mirror
 
-The local changes are mirrored to `git@github.com:elrond298/pi-skillful.git`
-The mirror contains only this package: the monorepo history is
-rewritten with `git filter-repo --subdirectory-filter packages/pi-skillful
---prune-empty always --refs skillful`, so the package contents sit at the
-repo root, commits that never touched the package are dropped, and all
-commit hashes differ from the local repo.
-
-Refresh the mirror after local work is committed (bookmark `skillful`):
-
-```bash
-cd ~/opt/pi-skillful
-git clone -q --no-local --branch skillful . /tmp/pi-skillful-export && cd /tmp/pi-skillful-export
-git filter-repo --subdirectory-filter packages/pi-skillful --prune-empty always --refs skillful
-git remote add github git@github.com:elrond298/pi-skillful.git
-git push github skillful:main
-```
-
-`git filter-repo` comes from `uv tool install git-filter-repo`.
-
-Re-filtering is deterministic for unchanged upstream commits, so pushes
-fast-forward; add `--force` if local history was rewritten (squash/amend)
-and the push is rejected.
+The mirror at `git@github.com:elrond298/pi-skillful.git` was created
+from the fork with `git filter-repo --subdirectory-filter packages/pi-skillful
+--prune-empty always`, which is why this history is unrelated to upstream.
+This repo is a clone of that mirror, so keeping it in sync is a plain push —
+no re-filtering needed:
 
 ## Local modifications
 
@@ -84,6 +82,5 @@ Files:
   `~/.pi/agent/npm/node_modules/pi-skillful`; the original 0.4.0 install is
   backed up next to it as `pi-skillful.upstream-0.4.0`. `pi package update`
   may replace the symlink — re-create it after updates.
-- Validation (from the monorepo root): `npm run -w packages/pi-skillful check`,
-  `npm test -w packages/pi-skillful`,
-  `npm run -w packages/pi-skillful pack:dry-run`.
+- Validation (from this repo root): `npm run check`, `npm test`,
+  `npm run pack:dry-run`.

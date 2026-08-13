@@ -2,17 +2,19 @@
 # Sync upstream pi-mono's packages/pi-skillful into this fork.
 #
 # This repo is a clone of the filtered GitHub mirror: single-package history
-# with files at the root, so its history is unrelated to upstream (rewritten
-# hashes) and `git merge upstream/main` cannot work directly.
+# with files at the root, so `git merge upstream/main` cannot work directly.
 #
 # How this works:
 #   1. Fetch upstream (full monorepo) as refs/remotes/upstream/main.
 #   2. In a throwaway clone, re-filter upstream main with the same
 #      filter-repo recipe used to create the mirror. Filtering is
-#      deterministic for unchanged commits, so the branch keeps growing
+#      deterministic, so the filtered commits match the mirror's history
+#      (they are already ancestors of ours) and the branch keeps growing
 #      from the previous sync instead of restarting.
 #   3. Fetch the filtered result back as local branch `upstream-pkg`.
-#   4. Merge it (--allow-unrelated-histories only on the first sync).
+#   4. Merge it. --allow-unrelated-histories is only a fallback if the
+#      shared filtered base is ever missing (e.g. mirror made with other
+#      filter flags).
 #
 # Conflicts (files changed both locally and upstream) stop the merge; resolve
 # them and commit. Push with `git push origin main` afterwards.
@@ -55,7 +57,7 @@ git fetch -q "$tmp/repo" refs/remotes/upstream/main:refs/heads/upstream-pkg
 if git merge-base HEAD refs/heads/upstream-pkg >/dev/null 2>&1; then
   git merge --no-edit -m "Sync upstream pi-mono (packages/pi-skillful)" refs/heads/upstream-pkg
 else
-  echo "== first sync: unrelated histories =="
+  echo "== no shared filtered base; merging as unrelated histories =="
   git merge --no-edit --allow-unrelated-histories \
     -m "Sync upstream pi-mono (packages/pi-skillful)" refs/heads/upstream-pkg
 fi

@@ -5,8 +5,9 @@ This is a fork of `pi-skillful` from the upstream monorepo
 filtered single-package mirror hosted on GitHub (`origin`): the package
 contents sit at the repo root, and the history was rewritten by
 `git filter-repo --subdirectory-filter packages/pi-skillful --prune-empty
-always`, so every commit hash differs from upstream and the two histories are
-unrelated. Upstream is tracked via the `upstream` remote
+always`, so every commit hash differs from upstream's. Filtering is
+deterministic, so this history still shares its filtered base with upstream:
+syncs merge as a plain delta. Upstream is tracked via the `upstream` remote
 (<https://github.com/jvm/pi-mono.git>, branch `main`).
 
 ## Base
@@ -26,7 +27,7 @@ before the fork (`pi-skillful@0.4.0`): install telemetry was extracted into
 
 - Single branch `main`, pushed to `origin` (GitHub mirror).
 - Upstream state lives at `refs/remotes/upstream/main` (full monorepo, fetched
-  read-only; never merged directly — wrong paths and unrelated history).
+  read-only; never merged directly — wrong paths).
 - Syncs land through local branch `upstream-pkg`: the filtered form of
   upstream's `packages/pi-skillful`, merged into `main`.
 
@@ -39,9 +40,11 @@ scripts/sync-upstream.sh
 ```
 
 It fetches upstream, re-filters `packages/pi-skillful` into `upstream-pkg`
-(same filter-repo recipe as the mirror; deterministic, so the branch keeps
-growing from the previous sync), and merges it into the current branch.
-`--allow-unrelated-histories` is used automatically on the first sync only.
+(same filter-repo recipe as the mirror; deterministic, so the filtered
+commits are already ancestors of this history and the branch keeps growing
+from the previous sync), and merges it into the current branch.
+`--allow-unrelated-histories` is a fallback if the shared filtered base is
+ever missing (e.g. a mirror made with different filter flags).
 
 - Requires a clean working tree and `git-filter-repo`
   (`uv tool install git-filter-repo`).
@@ -53,7 +56,9 @@ growing from the previous sync), and merges it into the current branch.
 
 The mirror at `git@github.com:elrond298/pi-skillful.git` was created
 from the fork with `git filter-repo --subdirectory-filter packages/pi-skillful
---prune-empty always`, which is why this history is unrelated to upstream.
+--prune-empty always`, which is why the hashes differ from upstream's (the
+rewrite is deterministic, so filtered upstream commits are still ancestors
+of this history).
 This repo is a clone of that mirror, so keeping it in sync is a plain push —
 no re-filtering needed:
 

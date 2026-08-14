@@ -16,6 +16,10 @@ Make [Pi](https://pi.dev) skills easier to invoke, curate, and control without e
 > [!WARNING]
 > Pi packages can execute arbitrary code through extensions. Review package source before installing any third-party Pi package.
 
+## Upstream
+
+This is a fork of [pi-mono](https://github.com/jvm/pi-mono) (`packages/pi-skillful`, branch `main`), hosted on GitHub at `git@github.com:elrond298/pi-skillful.git`. Local modifications are tracked in [LOCAL_CHANGES.md](LOCAL_CHANGES.md). See [FORK.md](FORK.md) for the full fork and sync procedure.
+
 ## Features
 
 ### Progressive skill loading

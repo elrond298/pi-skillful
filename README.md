@@ -4,6 +4,11 @@
 
 # pi-skillful
 
+> [!IMPORTANT]
+> **⚠️ Local fork — this README is the upstream document with local modifications on top.**
+> This fork adds a `$` skill autocomplete popup to the upstream [`pi-mono`](https://github.com/jvm/pi-mono) `packages/pi-skillful`.
+> See [LOCAL_CHANGES.md](./LOCAL_CHANGES.md) for the complete list of local changes.
+
 Make [Pi](https://pi.dev) skills easier to invoke, curate, and control without editing their source files.
 
 `pi-skillful` provides four focused upgrades:

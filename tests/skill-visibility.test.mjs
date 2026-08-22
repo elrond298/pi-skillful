@@ -149,6 +149,7 @@ for (const mode of ["tui", "rpc"]) {
 
     await registeredCommands.get("skillful").handler("", ctx);
     assert.ok(menu.render(120).join("\n").includes("Global"));
+    assert.equal(menu.render(120).join("\n").includes("\x1b[96m[Global]\x1b[39m"), mode === "rpc");
     assert.ok(!menu.render(120).join("\n").includes("Project"));
 
     menu.handleInput("\t");
@@ -157,7 +158,7 @@ for (const mode of ["tui", "rpc"]) {
   });
 }
 
-test("plain-text menus mark the active project and global scopes", async () => {
+test("plain-text RPC menus color the active project and global scopes", async () => {
   const cwd = await mkdtemp(join(home, "menu-scopes-"));
   const { registeredCommands } = registerVisibility([commandForSkill(skill("menu-scopes-skill"))]);
   let menu;
@@ -176,11 +177,11 @@ test("plain-text menus mark the active project and global scopes", async () => {
   };
 
   await registeredCommands.get("skillful").handler("", ctx);
-  assert.ok(menu.render(120).join("\n").includes("[Project]"));
+  assert.ok(menu.render(120).join("\n").includes("\x1b[96m[Project]\x1b[39m"));
   assert.ok(!menu.render(120).join("\n").includes("[Global]"));
 
   menu.handleInput("\t");
-  assert.ok(menu.render(120).join("\n").includes("[Global]"));
+  assert.ok(menu.render(120).join("\n").includes("\x1b[96m[Global]\x1b[39m"));
   assert.ok(!menu.render(120).join("\n").includes("[Project]"));
 });
 

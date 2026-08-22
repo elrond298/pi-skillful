@@ -60,6 +60,7 @@ type DefinedByScope = Record<SkillfulScope, boolean>;
 interface SkillfulVisibilityMenuOptions {
   cwd: string;
   projectTrusted: boolean;
+  ansiAccent: boolean;
   skills: SkillListItem[];
   hiddenByScope: HiddenSkillsByScope;
   hiddenSkillsDefinedByScope: DefinedByScope;
@@ -121,6 +122,7 @@ export default function skillVisibility(pi: ExtensionAPI) {
         new SkillfulVisibilityMenu({
           cwd: ctx.cwd,
           projectTrusted,
+          ansiAccent: ctx.mode === "rpc",
           skills,
           hiddenByScope: {
             global: new Set(scoped.global.hiddenSkills),
@@ -226,6 +228,7 @@ function getSkillItems(pi: ExtensionAPI): SkillListItem[] {
 class SkillfulVisibilityMenu implements Component {
   private readonly cwd: string;
   private readonly projectTrusted: boolean;
+  private readonly ansiAccent: boolean;
   private readonly scopes: SkillfulScope[];
   private readonly skills: SkillListItem[];
   private readonly hiddenByScope: HiddenSkillsByScope;
@@ -246,6 +249,7 @@ class SkillfulVisibilityMenu implements Component {
   constructor(options: SkillfulVisibilityMenuOptions) {
     this.cwd = options.cwd;
     this.projectTrusted = options.projectTrusted;
+    this.ansiAccent = options.ansiAccent;
     this.scopes = options.projectTrusted ? SCOPES : ["global"];
     this.scope = options.projectTrusted ? "project" : "global";
     this.skills = options.skills;
@@ -304,9 +308,10 @@ class SkillfulVisibilityMenu implements Component {
     return this.scopes
       .map((scope) => {
         const label = scope === "global" ? "Global" : "Project";
-        return scope === this.scope
-          ? this.theme.bg("selectedBg", this.theme.fg("accent", `[${label}]`))
-          : this.theme.fg("muted", ` ${label} `);
+        if (scope !== this.scope) return this.theme.fg("muted", ` ${label} `);
+
+        const selected = this.theme.bg("selectedBg", this.theme.fg("accent", `[${label}]`));
+        return this.ansiAccent ? `\x1b[96m${selected}\x1b[39m` : selected;
       })
       .join(" ");
   }

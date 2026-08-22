@@ -6,7 +6,7 @@ import {
   type Skill,
   type Theme,
 } from "@earendil-works/pi-coding-agent";
-import { type Component, Key, matchesKey, type SettingItem, SettingsList, truncateToWidth, type TUI } from "@earendil-works/pi-tui";
+import { type Component, Key, matchesKey, type SettingItem, SettingsList, truncateToWidth, type TUI, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import {
   normalizeSkillName,
   normalizeSkillNames,
@@ -23,6 +23,7 @@ import { replaceSkillsSection } from "../skill-prompt.js";
 import { isTopLevelSkill, listLoadedSkills, type LoadedSkillInfo } from "../skills.js";
 import { hasActiveSessionSkillToggles, refreshSessionSkillToggles } from "./session-skill-toggles.js";
 const SCOPES: SkillfulScope[] = ["global", "project"];
+const DESCRIPTION_LINES = 2;
 const STORE_KEY = Symbol.for("pi-skillful.skillVisibilityStore");
 const STARTUP_PATCH_KEY = Symbol.for("pi-skillful.startupPatchV3");
 
@@ -244,6 +245,7 @@ class SkillfulVisibilityMenu implements Component {
   private readonly bottomBorder: DynamicBorder;
   private scope: SkillfulScope;
   private settingsList: SettingsList;
+  private descriptionExpanded = false;
   private saveQueue: Promise<void> = Promise.resolve();
 
   constructor(options: SkillfulVisibilityMenuOptions) {
@@ -268,6 +270,7 @@ class SkillfulVisibilityMenu implements Component {
   }
 
   render(width: number): string[] {
+    if (this.descriptionExpanded) return this.renderDescriptionDetail(width);
     return [
       ...this.topBorder.render(width),
       truncateToWidth(`  ${this.theme.bold(this.theme.fg("accent", "pi-skillful"))}  ${this.renderTabs()}`, width),
@@ -275,12 +278,29 @@ class SkillfulVisibilityMenu implements Component {
       "",
       ...this.settingsList.render(width),
       "",
+      ...this.renderSelectedDescription(width),
+      "",
       truncateToWidth(this.theme.fg("dim", this.renderHelp()), width),
       ...this.bottomBorder.render(width),
     ];
   }
 
   handleInput(data: string): void {
+    if (this.descriptionExpanded) {
+      if (matchesKey(data, Key.ctrl("c"))) this.close();
+      else if (matchesKey(data, Key.escape) || matchesKey(data, Key.enter)) {
+        this.descriptionExpanded = false;
+        this.tui.requestRender();
+      }
+      return;
+    }
+    if (matchesKey(data, Key.enter)) {
+      if (this.selectedSkillName()) {
+        this.descriptionExpanded = true;
+        this.tui.requestRender();
+      }
+      return;
+    }
     if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
       this.switchScope(1);
       return;
@@ -304,6 +324,36 @@ class SkillfulVisibilityMenu implements Component {
     this.settingsList.invalidate();
   }
 
+  private renderSelectedDescription(width: number): string[] {
+    const skill = this.skills.find((candidate) => candidate.name === this.selectedSkillName());
+    const contentWidth = Math.max(1, width - 4);
+    const wrapped = wrapTextWithAnsi(skill?.description || "No skill description provided.", contentWidth);
+    const lines = wrapped.slice(0, DESCRIPTION_LINES);
+
+    if (wrapped.length > DESCRIPTION_LINES) {
+      lines[DESCRIPTION_LINES - 1] = truncateToWidth(`${lines[DESCRIPTION_LINES - 1]}…`, contentWidth, "…");
+    }
+    while (lines.length < DESCRIPTION_LINES) lines.push("");
+
+    return lines.map((line) => truncateToWidth(this.theme.fg("dim", `  ${line}`), width));
+  }
+
+  private renderDescriptionDetail(width: number): string[] {
+    const skill = this.skills.find((candidate) => candidate.name === this.selectedSkillName());
+    const description = skill?.description || "No skill description provided.";
+    const descriptionLines = wrapTextWithAnsi(description, Math.max(1, width - 4));
+
+    return [
+      ...this.topBorder.render(width),
+      truncateToWidth(`  ${this.theme.bold(this.theme.fg("accent", skill?.name || "Skill description"))}`, width),
+      "",
+      ...descriptionLines.map((line) => truncateToWidth(this.theme.fg("dim", `  ${line}`), width)),
+      "",
+      truncateToWidth(this.theme.fg("dim", "  Enter/Esc back"), width),
+      ...this.bottomBorder.render(width),
+    ];
+  }
+
   private renderTabs(): string {
     return this.scopes
       .map((scope) => {
@@ -318,7 +368,7 @@ class SkillfulVisibilityMenu implements Component {
 
   private renderHelp(): string {
     const scopeHelp = this.projectTrusted ? "Tab/←/→ switch scope · " : "";
-    return `  ${scopeHelp}1-9 assign/clear toggle · Enter/Space on/off · Esc close`;
+    return `  ${scopeHelp}1-9 assign/clear toggle · Enter details · Space on/off · Esc close`;
   }
 
   private switchScope(direction: 1 | -1): void {
@@ -334,7 +384,6 @@ class SkillfulVisibilityMenu implements Component {
       return {
         id: skill.name,
         label: skill.name,
-        description: `${skill.description || "No skill description provided."}\nPress 1-9 to assign or clear this skill's toggle slot in the ${this.scope} scope.`,
         currentValue: this.skillValue(skill.name, hidden),
         values: [this.skillValue(skill.name, false), this.skillValue(skill.name, true)],
       };

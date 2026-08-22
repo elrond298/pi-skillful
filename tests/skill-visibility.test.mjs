@@ -185,6 +185,47 @@ test("plain-text RPC menus color the active project and global scopes", async ()
   assert.ok(!menu.render(120).join("\n").includes("[Project]"));
 });
 
+test("skill descriptions keep the menu height stable", async () => {
+  const cwd = await mkdtemp(join(home, "menu-description-height-"));
+  const shortSkill = skill("a-short-description");
+  const longSkill = skill("b-long-description");
+  shortSkill.description = "Short description.";
+  longSkill.description = `${"Long description text ".repeat(40)}FULL DESCRIPTION END`;
+  const { registeredCommands } = registerVisibility([shortSkill, longSkill].map(commandForSkill));
+  let menu;
+  const tui = { requestRender: () => undefined };
+  const ctx = {
+    cwd,
+    hasUI: true,
+    isProjectTrusted: () => false,
+    mode: "tui",
+    ui: {
+      custom: async (factory) => {
+        menu = factory(tui, identityTheme, {}, () => undefined);
+      },
+      notify: () => undefined,
+    },
+  };
+
+  await registeredCommands.get("skillful").handler("", ctx);
+  const shortRender = menu.render(40);
+  menu.handleInput("\x1b[B");
+  const longRender = menu.render(40);
+
+  assert.match(shortRender.join("\n"), /Short description/);
+  assert.match(longRender.join("\n"), /Long description text/);
+  assert.equal(longRender.length, shortRender.length);
+  assert.doesNotMatch(longRender.join("\n"), /FULL DESCRIPTION END/);
+
+  menu.handleInput("\r");
+  const detailRender = menu.render(40);
+  assert.match(detailRender.join("\n"), /FULL\s+DESCRIPTION END/);
+  assert.match(detailRender.join("\n"), /Enter\/Esc back/);
+
+  menu.handleInput("\x1b");
+  assert.equal(menu.render(40).length, longRender.length);
+});
+
 test("startup patch colors the built-in skill list from effective settings", async () => {
   const cwd = await mkdtemp(join(home, "startup-colors-"));
   await writeSettings(globalSettingsPath, { skillful: { hiddenSkills: ["hidden"] } });

@@ -157,6 +157,33 @@ for (const mode of ["tui", "rpc"]) {
   });
 }
 
+test("plain-text menus mark the active project and global scopes", async () => {
+  const cwd = await mkdtemp(join(home, "menu-scopes-"));
+  const { registeredCommands } = registerVisibility([commandForSkill(skill("menu-scopes-skill"))]);
+  let menu;
+  const tui = { requestRender: () => undefined };
+  const ctx = {
+    cwd,
+    hasUI: true,
+    isProjectTrusted: () => true,
+    mode: "rpc",
+    ui: {
+      custom: async (factory) => {
+        menu = factory(tui, identityTheme, {}, () => undefined);
+      },
+      notify: () => undefined,
+    },
+  };
+
+  await registeredCommands.get("skillful").handler("", ctx);
+  assert.ok(menu.render(120).join("\n").includes("[Project]"));
+  assert.ok(!menu.render(120).join("\n").includes("[Global]"));
+
+  menu.handleInput("\t");
+  assert.ok(menu.render(120).join("\n").includes("[Global]"));
+  assert.ok(!menu.render(120).join("\n").includes("[Project]"));
+});
+
 test("startup patch colors the built-in skill list from effective settings", async () => {
   const cwd = await mkdtemp(join(home, "startup-colors-"));
   await writeSettings(globalSettingsPath, { skillful: { hiddenSkills: ["hidden"] } });

@@ -305,7 +305,7 @@ class SkillfulVisibilityMenu implements Component {
       .map((scope) => {
         const label = scope === "global" ? "Global" : "Project";
         return scope === this.scope
-          ? this.theme.bg("selectedBg", this.theme.fg("accent", ` ${label} `))
+          ? this.theme.bg("selectedBg", this.theme.fg("accent", `[${label}]`))
           : this.theme.fg("muted", ` ${label} `);
       })
       .join(" ");

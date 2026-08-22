@@ -123,36 +123,39 @@ test("trusted project visibility settings override global settings", async () =>
   assert.ok(!result.systemPrompt.includes(`<name>${projectSkill.name}</name>`));
 });
 
-test("untrusted projects expose only global settings in the menu", async () => {
-  const cwd = await mkdtemp(join(home, "menu-untrusted-"));
-  const loadedSkill = skill("menu-skill");
-  const projectPath = join(cwd, ".pi", "settings.json");
-  const projectSettings = { skillful: { hiddenSkills: [loadedSkill.name] } };
-  await writeSettings(globalSettingsPath, { skillful: {} });
-  await writeSettings(projectPath, projectSettings);
-  const { registeredCommands } = registerVisibility([commandForSkill(loadedSkill)]);
-  let menu;
-  const tui = { requestRender: () => undefined };
-  const ctx = {
-    cwd,
-    isProjectTrusted: () => false,
-    mode: "tui",
-    ui: {
-      custom: async (factory) => {
-        menu = factory(tui, identityTheme, {}, () => undefined);
+for (const mode of ["tui", "rpc"]) {
+  test(`untrusted projects expose only global settings in the menu in ${mode} mode`, async () => {
+    const cwd = await mkdtemp(join(home, `menu-untrusted-${mode}-`));
+    const loadedSkill = skill(`menu-skill-${mode}`);
+    const projectPath = join(cwd, ".pi", "settings.json");
+    const projectSettings = { skillful: { hiddenSkills: [loadedSkill.name] } };
+    await writeSettings(globalSettingsPath, { skillful: {} });
+    await writeSettings(projectPath, projectSettings);
+    const { registeredCommands } = registerVisibility([commandForSkill(loadedSkill)]);
+    let menu;
+    const tui = { requestRender: () => undefined };
+    const ctx = {
+      cwd,
+      hasUI: true,
+      isProjectTrusted: () => false,
+      mode,
+      ui: {
+        custom: async (factory) => {
+          menu = factory(tui, identityTheme, {}, () => undefined);
+        },
+        notify: () => undefined,
       },
-      notify: () => undefined,
-    },
-  };
+    };
 
-  await registeredCommands.get("skillful").handler("", ctx);
-  assert.ok(menu.render(120).join("\n").includes("Global"));
-  assert.ok(!menu.render(120).join("\n").includes("Project"));
+    await registeredCommands.get("skillful").handler("", ctx);
+    assert.ok(menu.render(120).join("\n").includes("Global"));
+    assert.ok(!menu.render(120).join("\n").includes("Project"));
 
-  menu.handleInput("\t");
-  assert.ok(!menu.render(120).join("\n").includes("Project"));
-  assert.deepEqual(JSON.parse(await readFile(projectPath, "utf-8")), projectSettings);
-});
+    menu.handleInput("\t");
+    assert.ok(!menu.render(120).join("\n").includes("Project"));
+    assert.deepEqual(JSON.parse(await readFile(projectPath, "utf-8")), projectSettings);
+  });
+}
 
 test("startup patch colors the built-in skill list from effective settings", async () => {
   const cwd = await mkdtemp(join(home, "startup-colors-"));

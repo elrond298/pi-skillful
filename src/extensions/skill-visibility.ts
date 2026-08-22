@@ -104,7 +104,7 @@ export default function skillVisibility(pi: ExtensionAPI) {
   pi.registerCommand("skillful", {
     description: "Open the pi-skillful skill visibility menu.",
     handler: async (_args, ctx) => {
-      if (ctx.mode !== "tui") {
+      if (!ctx.hasUI) {
         ctx.ui.notify("/skillful requires interactive UI", "warning");
         return;
       }

@@ -17,6 +17,7 @@ This project follows the spirit of [Keep a Changelog](https://keepachangelog.com
 ### Fixed
 
 - Let `enableInstallTelemetry: false` override an enabled `PI_TELEMETRY` environment flag.
+- Allow `/skillful` to open in interactive remote clients such as Pi Web, not only Pi's terminal interface.
 
 ## [0.4.0] - 2026-07-28
 

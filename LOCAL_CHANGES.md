@@ -9,6 +9,7 @@ fork and sync procedure.
 
 | Date | Change | Commit |
 | ---- | ------ | ------ |
+| 2026-08-22 | Support `/skillful` in interactive remote clients such as Pi Web | `2f700b6` |
 | 2026-08-13 | FORK.md: add push command to mirror section | `e113739` |
 | 2026-08-13 | Refine sync docs: filtered history shares ancestry with upstream | `2f729cf` |
 | 2026-08-13 | Document upstream pi-mono and add sync-upstream helper | `2cca141` |

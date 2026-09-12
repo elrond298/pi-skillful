@@ -11,10 +11,11 @@
 
 Make [Pi](https://pi.dev) skills easier to invoke, curate, and control without editing their source files.
 
-`pi-skillful` provides four focused upgrades:
+`pi-skillful` provides five focused upgrades:
 
 - **Progressive skill loading**: discover `.agents/skills/` from every ancestor directory (like `AGENTS.md`), not just within the git repo boundary.
 - **Inline skill invocation**: invoke one or more skills anywhere in a prompt with `/skill:name`.
+- **`$` skill autocomplete**: type `$` anywhere in the prompt to search and insert skills with a fuzzy-matched popup.
 - **Skill prompt visibility**: choose which skills are hidden from the model's automatic skill-discovery prompt while keeping them explicitly invokable.
 - **Session skill toggles**: assign up to nine skills to number slots and toggle model visibility while writing a prompt.
 
@@ -43,11 +44,14 @@ Vanilla Pi expands `/skill:name` only when it appears at the beginning of the pr
 Use /skill:code-security and /skill:semgrep to review this change.
 ```
 
-The extension replaces each known marker with that skill's `SKILL.md` content before Pi's built-in skill/template expansion runs.
+The extension leaves your prompt exactly as typed and prepends each invoked skill's `SKILL.md` as a canonical `<skill>` block before Pi's built-in skill/template expansion runs. Pi then renders every invoked skill as a collapsible `[skill] name (ctrl+o to expand)` entry with your prompt below it — the same display as the built-in `/skill:name` command.
+
+Resubmitting a forked prompt is safe: skill blocks left by a previous expansion are replaced with fresh ones instead of duplicating.
 
 ### `$` skill autocomplete
 
 The built-in slash-command popup only appears when `/` starts the prompt. Typing `$` at a word boundary anywhere in the prompt opens a skill autocomplete popup instead: `$` alone lists all skills, and typing filters them (`$skill:name` is accepted too). Choosing a suggestion inserts `/skill:name`, which inline skill invocation then expands on submit. Tokens that match no skill (like `$HOME`) never open the popup.
+
 ### Skill prompt visibility
 
 Hide skills from the `<available_skills>` section of the system prompt without editing each skill's `disable-model-invocation` frontmatter.
@@ -66,7 +70,8 @@ Configuration is stored under the `skillful` key in Pi settings:
 ```json
 {
   "skillful": {
-    "hiddenSkills": ["pdf", "xlsx"]
+    "hiddenSkills": ["pdf", "xlsx"],
+    "descriptionKey": "space"
   }
 }
 ```
@@ -76,7 +81,7 @@ Supported scopes:
 - Global: `~/.pi/agent/settings.json`
 - Project: `.pi/settings.json`
 
-Project visibility and toggle slots inherit global settings until changed in the Project tab. When either is changed, Pi Skillful writes a full project override containing both `hiddenSkills` and `toggleSlots`. If the project state is changed back to match global, those project override keys are removed so the project inherits global again.
+Project visibility, toggle slots, and `descriptionKey` inherit global settings. Changing visibility or slots in the Project tab writes a full project override containing both `hiddenSkills` and `toggleSlots`; matching values remove those keys so the project inherits global settings again. An explicitly configured project `descriptionKey` overrides the global key.
 
 Open the menu with:
 
@@ -84,8 +89,11 @@ Open the menu with:
 /skillful
 ```
 
-The menu works in Pi's terminal interface and in interactive remote clients such as Pi Web.
-The menu lists configurable skills alphabetically. Toggle a skill off or on in the active scope. Use the Global/Project tabs to choose which settings file to edit. In the Project tab, inherited on/off values are shown normally; project overrides are highlighted. Press `1` through `9` on a selected skill to assign or clear that scope's session toggle slot. Visibility and toggle slots are independent.
+**Pi Web support.** The menu works in Pi's terminal interface and in [Pi Web](https://github.com/agegr/pi-web) through its RPC custom-component bridge. The integration is capability-based, so other compatible RPC clients may also work, but they have not been tested. The active Global/Project scope remains explicit with Pi Web's plain theme; clients without custom-component support receive a warning instead of failing silently.
+
+**Stable descriptions.** Description previews stay at two lines while navigating, so different description lengths do not resize the menu. Press `descriptionKey` (`Space` by default) to open or close the complete description in a bounded, scrollable view.
+
+The menu lists configurable skills alphabetically. The configured Pi Confirm action (`Enter` by default) continues to toggle the selected skill, including while filtering; `1` through `9` assigns or clears that scope's session toggle slot. In the Project tab, inherited on/off values are shown normally; project overrides are highlighted. Visibility and toggle slots are independent.
 
 Project settings are read and the Project tab is available only when Pi trusts the current project. In an untrusted project, `pi-skillful` ignores `.pi/settings.json` and exposes only global settings.
 
@@ -104,7 +112,8 @@ Assign skills to up to nine prompt-editor slots with JSON settings:
       "2": "code-review",
       "3": "git"
     },
-    "toggleModifier": "alt"
+    "toggleModifier": "alt",
+    "descriptionKey": "space"
   }
 }
 ```
@@ -113,6 +122,9 @@ Configured slots appear on the prompt editor's top border as `N skill-name`. Pro
 
 `toggleModifier` defaults to `"alt"`. Supported values are `"alt"`, `"ctrl"`, `"ctrl+shift"`, `"alt+shift"`, `"ctrl+alt"`, and `"ctrl+alt+shift"`. Change it if your terminal reserves `alt+number` shortcuts. An explicitly configured project value takes precedence over the global value, including explicit `"alt"`. Unsupported explicit values fall back to `"alt"` in that scope.
 
+`descriptionKey` defaults to `"space"` and accepts Pi key identifiers such as `"ctrl+o"`. Invalid or empty values fall back to `"space"`. If it conflicts with an existing menu action, that action keeps its behavior and the description shortcut is not shown.
+
+Available key combinations depend on the client. In [Pi Web](https://github.com/badlogic/pi-web), prefer printable keys or simple combinations such as `"ctrl+o"` and `"alt+o"`; function keys, Super, and multi-modifier combinations may not be transmitted by its input bridge.
 On app startup, non-hidden skills are active and hidden skills are inactive. Within a running Pi process, `/new` preserves the current toggle state for the new session. Resuming, forking, cloning, reloading, or restarting Pi resets toggle state from settings. Inline `/skill:name` invocation remains explicit and works even when that skill is inactive. Skills bundled in Pi packages are never modified by these toggles.
 
 ## Installation

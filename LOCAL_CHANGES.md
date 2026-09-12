@@ -9,6 +9,8 @@ fork and sync procedure.
 
 | Date | Change | Commit |
 | ---- | ------ | ------ |
+| 2026-08-23 | Backport `/skillful` menu improvements from pi-mono: configurable `descriptionKey`, keybindings-aware menu input, scrollable full-description view, RPC capability warning | `f39d495` |
+| 2026-08-23 | Inline skill expansion keeps the prompt as typed and prepends canonical `<skill>` blocks | `422ead1` |
 | 2026-08-22 | Support `/skillful` in interactive remote clients such as Pi Web | `2f700b6` |
 | 2026-08-13 | FORK.md: add push command to mirror section | `e113739` |
 | 2026-08-13 | Refine sync docs: filtered history shares ancestry with upstream | `2f729cf` |

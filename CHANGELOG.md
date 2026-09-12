@@ -12,12 +12,14 @@ This project follows the spirit of [Keep a Changelog](https://keepachangelog.com
 
 ### Changed
 
+- Inline skill invocation now prepends each invoked skill as a canonical `<skill>` block and keeps the user prompt exactly as typed, so Pi renders every skill as a collapsible `[skill] name` entry like the built-in `/skill` command. Resubmitted forked prompts no longer duplicate skill blocks.
 - Share install telemetry mechanics through `@mocito/install-telemetry` while preserving Pi-specific settings and state paths.
 
 ### Fixed
 
 - Let `enableInstallTelemetry: false` override an enabled `PI_TELEMETRY` environment flag.
 - Allow `/skillful` to open in interactive remote clients such as Pi Web, not only Pi's terminal interface.
+- Keep description previews at two lines so the menu does not resize while navigating, with a bounded, scrollable view opened by the configurable `descriptionKey` (`Space` by default) while Pi's Confirm action retains its existing on/off behavior.
 
 ## [0.4.0] - 2026-07-28
 

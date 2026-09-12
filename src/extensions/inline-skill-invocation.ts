@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { listSkillsByName, readSkillBlock } from "../skills.js";
 
 const SKILL_INVOCATION_PATTERN = /(^|[^\w/-])\/skill:([a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)(?=$|[^a-z0-9-])/g;
+const EXPANDED_SKILL_BLOCKS = /^(?:<skill name="[^"]*" location="[^"]*">\n[\s\S]*?\n<\/skill>\n\n)+/;
 
 export default function inlineSkillInvocation(pi: ExtensionAPI) {
   pi.on("input", async (event, ctx) => {
@@ -9,10 +10,13 @@ export default function inlineSkillInvocation(pi: ExtensionAPI) {
       return { action: "continue" };
     }
 
-    const skillsByName = listSkillsByName(pi.getCommands());
-    const invocations = findInvocations(event.text);
-    if (invocations.length === 0) return { action: "continue" };
+    // Drop skill blocks left by a previous expansion (fork resubmit) so the
+    // prompt is expanded exactly once.
+    const userText = event.text.replace(EXPANDED_SKILL_BLOCKS, "");
 
+    const skillsByName = listSkillsByName(pi.getCommands());
+    const invocations = findInvocations(userText);
+    if (invocations.length === 0) return { action: "continue" };
     const unknown = invocations.filter((invocation) => !skillsByName.has(invocation.name));
     if (unknown.length > 0) {
       ctx.ui.notify(
@@ -38,16 +42,14 @@ export default function inlineSkillInvocation(pi: ExtensionAPI) {
 
     if (blocks.size === 0) return { action: "continue" };
 
-    const expanded = event.text.replace(SKILL_INVOCATION_PATTERN, (fullMatch: string, prefix: string, name: string) => {
-      const block = blocks.get(name);
-      return block ? `${prefix}\n\n${block}\n\n` : fullMatch;
-    });
+    // Canonical Pi expansion: prepend the <skill> blocks and keep the user's
+    // input as typed, so Pi renders each skill as a collapsible [skill] entry.
+    const expanded = `${Array.from(blocks.values()).join("\n\n")}\n\n${userText}`;
 
-    return { action: "transform", text: normalizeBlankLines(expanded), images: event.images };
+    return { action: "transform", text: expanded, images: event.images };
   });
 
 }
-
 
 function findInvocations(text: string): Array<{ name: string }> {
   const result: Array<{ name: string }> = [];
@@ -56,8 +58,4 @@ function findInvocations(text: string): Array<{ name: string }> {
     result.push({ name: match[2] });
   }
   return result;
-}
-
-function normalizeBlankLines(text: string): string {
-  return text.replace(/\n{4,}/g, "\n\n\n").trim();
 }

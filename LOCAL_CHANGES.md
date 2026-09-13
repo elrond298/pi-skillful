@@ -9,8 +9,8 @@ fork and sync procedure.
 
 | Date | Change | Commit |
 | ---- | ------ | ------ |
-| 2026-08-23 | Backport `/skillful` menu improvements from pi-mono: configurable `descriptionKey`, keybindings-aware menu input, scrollable full-description view, RPC capability warning | `f39d495` |
-| 2026-08-23 | Inline skill expansion keeps the prompt as typed and prepends canonical `<skill>` blocks | `422ead1` |
+| 2026-09-12 | Backport `/skillful` menu improvements from pi-mono: configurable `descriptionKey`, keybindings-aware menu input, scrollable full-description view, RPC capability warning | `f39d495` |
+| 2026-09-12 | Inline skill expansion procedure: drop `<skill>` blocks left by a previous expansion, resolve every `/skill:name` marker anywhere in the prompt, then prepend each one as a canonical `<skill name=... location=...>` block and submit the prompt exactly as typed — Pi renders each block as a collapsible `[skill] name` entry, and a forked resubmit expands once instead of duplicating | `422ead1` |
 | 2026-08-22 | Support `/skillful` in interactive remote clients such as Pi Web | `2f700b6` |
 | 2026-08-13 | FORK.md: add push command to mirror section | `e113739` |
 | 2026-08-13 | Refine sync docs: filtered history shares ancestry with upstream | `2f729cf` |

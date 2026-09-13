@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # Sync upstream pi-mono's packages/pi-skillful into this fork.
 #
-# This repo is a clone of the filtered GitHub mirror: single-package history
+# This repo is a filtered single-package fork: single-package history
 # with files at the root, so `git merge upstream/main` cannot work directly.
 #
 # How this works:
 #   1. Fetch upstream (full monorepo) as refs/remotes/upstream/main.
 #   2. In a throwaway clone, re-filter upstream main with the same
-#      filter-repo recipe used to create the mirror. Filtering is
-#      deterministic, so the filtered commits match the mirror's history
+#      filter-repo recipe used to create this fork. Filtering is
+#      deterministic, so the filtered commits match our history
 #      (they are already ancestors of ours) and the branch keeps growing
 #      from the previous sync instead of restarting.
 #   3. Fetch the filtered result back as local branch `upstream-pkg`.
 #   4. Merge it. --allow-unrelated-histories is only a fallback if the
-#      shared filtered base is ever missing (e.g. mirror made with other
+#      shared filtered base is ever missing (e.g. a filtered copy with other
 #      filter flags).
 #
 # Conflicts (files changed both locally and upstream) stop the merge; resolve
@@ -63,4 +63,4 @@ else
 fi
 
 echo
-echo "Done. Push the mirror with: git push origin main"
+echo "Done. Push the result with: git push origin main"

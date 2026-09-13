@@ -1,193 +1,93 @@
-<p>
-  <img src="./banner.png" alt="pi-skillful" width="1100">
-</p>
-
 # pi-skillful
-
-> [!IMPORTANT]
-> **⚠️ Local fork — this README is the upstream document with local modifications on top.**
-> This fork adds a `$` skill autocomplete popup to the upstream [`pi-mono`](https://github.com/jvm/pi-mono) `packages/pi-skillful`.
-> See [LOCAL_CHANGES.md](./LOCAL_CHANGES.md) for the complete list of local changes.
 
 Make [Pi](https://pi.dev) skills easier to invoke, curate, and control without editing their source files.
 
-`pi-skillful` provides five focused upgrades:
-
-- **Progressive skill loading**: discover `.agents/skills/` from every ancestor directory (like `AGENTS.md`), not just within the git repo boundary.
-- **Inline skill invocation**: invoke one or more skills anywhere in a prompt with `/skill:name`.
-- **`$` skill autocomplete**: type `$` anywhere in the prompt to search and insert skills with a fuzzy-matched popup.
-- **Skill prompt visibility**: choose which skills are hidden from the model's automatic skill-discovery prompt while keeping them explicitly invokable.
-- **Session skill toggles**: assign up to nine skills to number slots and toggle model visibility while writing a prompt.
+This is a fork of [`pi-skillful`](https://github.com/jvm/pi-mono/tree/main/packages/pi-skillful) from the [pi-mono](https://github.com/jvm/pi-mono) monorepo. Every upstream feature works here unchanged; the interaction changes listed below live here first.
 
 > [!WARNING]
 > Pi packages can execute arbitrary code through extensions. Review package source before installing any third-party Pi package.
 
-## Upstream
+## What this fork adds
 
-This is a fork of [pi-mono](https://github.com/jvm/pi-mono) (`packages/pi-skillful`, branch `main`), hosted on GitHub at `git@github.com:elrond298/pi-skillful.git`. Local modifications are tracked in [LOCAL_CHANGES.md](LOCAL_CHANGES.md). See [FORK.md](FORK.md) for the full fork and sync procedure.
-
-## Features
-
-### Progressive skill loading
-
-Pi discovers `.agents/skills/` directories in ancestor folders, but stops at the git repo root — skills above the repo boundary are invisible. `pi-skillful` removes that boundary by walking the full ancestor chain to the filesystem root, mirroring how `AGENTS.md` context files work.
-
-No configuration needed. When a git repo is detected, `pi-skillful` automatically contributes `.agents/skills/` directories from parent directories above the repo root (excluding `~/.agents/skills/`, which Pi already loads globally). In projects without a git repo, Pi already walks to the filesystem root and this feature has no effect.
-
-Skill name collisions follow Pi's first-wins rule: skills discovered closer to the working directory take precedence over skills with the same name found higher up.
-
-### Inline skill invocation
-
-Vanilla Pi expands `/skill:name` only when it appears at the beginning of the prompt. `pi-skillful` expands known skill markers anywhere in the prompt, including multiple skills:
-
-```text
-Use /skill:code-security and /skill:semgrep to review this change.
-```
-
-The extension leaves your prompt exactly as typed and prepends each invoked skill's `SKILL.md` as a canonical `<skill>` block before Pi's built-in skill/template expansion runs. Pi then renders every invoked skill as a collapsible `[skill] name (ctrl+o to expand)` entry with your prompt below it — the same display as the built-in `/skill:name` command.
-
-Resubmitting a forked prompt is safe: skill blocks left by a previous expansion are replaced with fresh ones instead of duplicating.
+Upstream provides progressive skill loading, inline `/skill:name` invocation, skill prompt visibility, and session skill toggles; those work here unchanged and are documented in the [upstream README](https://github.com/jvm/pi-mono/tree/main/packages/pi-skillful#readme). What this fork changes:
 
 ### `$` skill autocomplete
 
-The built-in slash-command popup only appears when `/` starts the prompt. Typing `$` at a word boundary anywhere in the prompt opens a skill autocomplete popup instead: `$` alone lists all skills, and typing filters them (`$skill:name` is accepted too). Choosing a suggestion inserts `/skill:name`, which inline skill invocation then expands on submit. Tokens that match no skill (like `$HOME`) never open the popup.
+Type `$` at a word boundary anywhere in the prompt, not only at the start, to open a fuzzy-matched skill popup. `$` alone lists every skill, typing filters the list, and `$skill:name` is accepted too. Choosing a suggestion inserts `/skill:name`, which inline invocation expands on submit. Tokens that match no skill, like `$HOME`, never open the popup.
 
-### Skill prompt visibility
+### Inline invocation renders like the built-in command
 
-Hide skills from the `<available_skills>` section of the system prompt without editing each skill's `disable-model-invocation` frontmatter.
+Your prompt is submitted exactly as typed, and each invoked skill is prepended as a canonical `<skill>` block. Pi then renders a collapsible `[skill] name (ctrl+o to expand)` entry per skill with your text underneath — the same display as Pi's built-in `/skill:name`. Resubmitting a forked prompt replaces the blocks from the previous expansion instead of stacking a second copy.
 
-Hidden skills:
+### Skill menu: stable, scrollable descriptions
 
-- appear in the startup `[Skills]` list in the theme's error color, while visible skills appear dimmed;
-- are not advertised to the model for automatic skill selection;
-- remain loaded by Pi;
-- remain available for explicit invocation with `/skill:name`, including inline invocation.
+Description previews stay at two lines, so moving through the list no longer resizes the menu. `descriptionKey` (`space` by default) opens the complete description in a bounded, scrollable view. The menu follows Pi's configured actions instead of hard-coded keys: the Confirm action (`Enter` by default) toggles the selected skill, including while filtering, and `1` through `9` assign or clear a session toggle slot.
 
-Skills bundled in Pi packages are never affected by `skillful`; only global and project skills can be hidden or toggled.
+### Pi Web and other RPC clients
 
-Configuration is stored under the `skillful` key in Pi settings:
+The menu works in Pi's terminal interface and through the RPC custom-component bridge used by Pi Web and compatible clients. The active Global/Project scope stays readable with a plain theme, and a client that cannot render custom components gets a warning instead of failing silently.
 
-```json
-{
-  "skillful": {
-    "hiddenSkills": ["pdf", "xlsx"],
-    "descriptionKey": "space"
-  }
-}
-```
+## Install
 
-Supported scopes:
-
-- Global: `~/.pi/agent/settings.json`
-- Project: `.pi/settings.json`
-
-Project visibility, toggle slots, and `descriptionKey` inherit global settings. Changing visibility or slots in the Project tab writes a full project override containing both `hiddenSkills` and `toggleSlots`; matching values remove those keys so the project inherits global settings again. An explicitly configured project `descriptionKey` overrides the global key.
-
-Open the menu with:
-
-```text
-/skillful
-```
-
-**Pi Web support.** The menu works in Pi's terminal interface and in [Pi Web](https://github.com/agegr/pi-web) through its RPC custom-component bridge. The integration is capability-based, so other compatible RPC clients may also work, but they have not been tested. The active Global/Project scope remains explicit with Pi Web's plain theme; clients without custom-component support receive a warning instead of failing silently.
-
-**Stable descriptions.** Description previews stay at two lines while navigating, so different description lengths do not resize the menu. Press `descriptionKey` (`Space` by default) to open or close the complete description in a bounded, scrollable view.
-
-The menu lists configurable skills alphabetically. The configured Pi Confirm action (`Enter` by default) continues to toggle the selected skill, including while filtering; `1` through `9` assigns or clears that scope's session toggle slot. In the Project tab, inherited on/off values are shown normally; project overrides are highlighted. Visibility and toggle slots are independent.
-
-Project settings are read and the Project tab is available only when Pi trusts the current project. In an untrusted project, `pi-skillful` ignores `.pi/settings.json` and exposes only global settings.
-
-When the project settings file contains only `skillful` settings and the project override is removed, `.pi/settings.json` is deleted instead of leaving an empty settings file behind.
-
-### Session skill toggles
-
-Assign skills to up to nine prompt-editor slots with JSON settings:
-
-```json
-{
-  "skillful": {
-    "hiddenSkills": ["pdf", "xlsx"],
-    "toggleSlots": {
-      "1": "typescript",
-      "2": "code-review",
-      "3": "git"
-    },
-    "toggleModifier": "alt",
-    "descriptionKey": "space"
-  }
-}
-```
-
-Configured slots appear on the prompt editor's top border as `N skill-name`. Project `toggleSlots`, when defined as part of a project override, replace global `toggleSlots`; otherwise global slots are used and shown in the Project tab. Long names are truncated per slot when needed so all configured slot numbers remain visible. Active slots use the theme accent color; inactive slots use the muted color. Press `alt+1` through `alt+9` by default to toggle a slot for the current session only. Only the configured modifier and assigned slot numbers are consumed while the prompt editor has focus; no modifier-number keys are reserved when no slots are configured.
-
-`toggleModifier` defaults to `"alt"`. Supported values are `"alt"`, `"ctrl"`, `"ctrl+shift"`, `"alt+shift"`, `"ctrl+alt"`, and `"ctrl+alt+shift"`. Change it if your terminal reserves `alt+number` shortcuts. An explicitly configured project value takes precedence over the global value, including explicit `"alt"`. Unsupported explicit values fall back to `"alt"` in that scope.
-
-`descriptionKey` defaults to `"space"` and accepts Pi key identifiers such as `"ctrl+o"`. Invalid or empty values fall back to `"space"`. If it conflicts with an existing menu action, that action keeps its behavior and the description shortcut is not shown.
-
-Available key combinations depend on the client. In [Pi Web](https://github.com/badlogic/pi-web), prefer printable keys or simple combinations such as `"ctrl+o"` and `"alt+o"`; function keys, Super, and multi-modifier combinations may not be transmitted by its input bridge.
-On app startup, non-hidden skills are active and hidden skills are inactive. Within a running Pi process, `/new` preserves the current toggle state for the new session. Resuming, forking, cloning, reloading, or restarting Pi resets toggle state from settings. Inline `/skill:name` invocation remains explicit and works even when that skill is inactive. Skills bundled in Pi packages are never modified by these toggles.
-
-## Installation
-
-Install from npm:
+From GitHub:
 
 ```bash
-pi install npm:pi-skillful
+pi install git:github.com/elrond298/pi-skillful
 ```
 
-Install project-locally with Pi's `-l` flag:
+From a local checkout:
 
 ```bash
-pi install -l npm:pi-skillful
-```
-
-During local development from this monorepo:
-
-```bash
-pi install /path/to/pi-mono/packages/pi-skillful
-```
-
-For a one-off test run without installing:
-
-```bash
-pi -e /path/to/pi-mono/packages/pi-skillful
+pi install /path/to/pi-skillful     # user settings
+pi install -l /path/to/pi-skillful  # project settings
+pi -e /path/to/pi-skillful          # one-off test run, no install
 ```
 
 ## Usage
 
 1. Start Pi in a project with this package installed.
-2. Run `/skillful`.
-3. Select the Global or Project tab.
-4. Toggle skills on/off.
-5. Send a prompt normally, or explicitly invoke hidden skills with `/skill:name` anywhere in the prompt.
-
-Example:
+2. Run `/skillful` to choose which skills the model sees automatically, and to assign toggle slots.
+3. Invoke skills inline: `/skill:name` anywhere in a prompt, or type `$` to search for one and insert it.
 
 ```text
-Please analyze this using /skill:code-security, then summarize the risk.
+Use /skill:code-security and /skill:semgrep to review this change.
 ```
+
+Settings live under the `skillful` key — globally in `~/.pi/agent/settings.json`, per project in `.pi/settings.json` (project settings apply only while Pi trusts the project):
+
+```json
+{
+  "skillful": {
+    "hiddenSkills": ["pdf", "xlsx"],
+    "descriptionKey": "space"
+  }
+}
+```
+
+`descriptionKey` accepts Pi key identifiers such as `"ctrl+o"`; invalid or empty values fall back to `"space"`, a configured project value overrides the global one, and a conflict with an existing menu action leaves that action in charge. In Pi Web, prefer printable keys or simple combinations — function keys and multi-modifier chords may not survive its input bridge.
+
+The remaining features, settings, and menu keys are inherited from upstream and documented in the [upstream README](https://github.com/jvm/pi-mono/tree/main/packages/pi-skillful#readme).
 
 ## Development
 
-This package is source-distributed. Pi loads the TypeScript extensions directly via its extension loader.
-
-Requirements:
-
-- Node.js >= 20.6.0
-- npm for local development commands
-
-Common commands:
+This package is source-distributed: Pi loads the TypeScript extensions directly. Node.js >= 20.6.0 required.
 
 ```bash
 npm install
-npm run check
-npm test
+npm run check        # tsc --noEmit
+npm test             # compile to .test-dist, then node --test
 npm run pack:dry-run
 ```
 
+This checkout is normally symlinked into the Pi installation as `~/.pi/agent/npm/node_modules/pi-skillful`. `pi package update` may replace that symlink — re-create it after updates.
+
+## Upstream
+
+Forked from upstream `packages/pi-skillful` at `150ff8c` (2026-08-11). Upstream `main` is tracked as the `upstream` remote and merged with `scripts/sync-upstream.sh`, which re-filters `packages/pi-skillful` into this single-package layout. Because the history is a filtered rewrite, commit hashes differ from upstream's; the shared filtered base still lets each sync merge as a plain delta.
+
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow and pull request guidelines.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Security
 
